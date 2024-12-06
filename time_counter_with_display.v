@@ -1,13 +1,19 @@
 module time_counter_with_display(
     input clk,        
-    input rst,         
+    input rst,
+    input [2:0] in,    
+    input button,    
     output wire [6:0] seg1, 
     output wire [6:0] seg2, 
     output wire [6:0] seg3, 
     output wire [6:0] seg4, 
+    output reg [2:0]state;
     output reg led     
 );
-
+    parameter S0 = 3'b000;
+    parameter S1 = 3'b001;
+    parameter S2 = 3'b010;
+    parameter S3 = 3'b011;
     reg [25:0] clk_divider;  
     reg clk_1hz;             
     reg [5:0] second_count;  
@@ -40,46 +46,137 @@ module time_counter_with_display(
             min_unit_count <= 0;
             min_tens_count <= 0;
         end else begin
-            // Secunde
-            if (second_count == 59) begin
-                second_count <= 0;
+            case(state)
+                S0: if(in==3'b000)
+                    state = S0;
+                    if(in==3'b001)
+                    state = S1;
+                S1: if(in==3'b000) begin
+                        state=S1;
+                        if (second_count == 59) begin
+                            second_count <= 0;
 
-                // Minute
-                if (minute_count == 59) begin
-                    minute_count <= 0;
-                    min_unit_count <= 0;
-                    min_tens_count <= 0;
-                end else begin
-                    minute_count <= minute_count + 1;
+                            // Minute
+                            if (minute_count == 59) begin
+                                minute_count <= 0;
+                                min_unit_count <= 0;
+                                min_tens_count <= 0;
+                            end else begin
+                                minute_count <= minute_count + 1;
 
-                    if (min_unit_count == 9) begin
-                        min_unit_count <= 0;
+                                if (min_unit_count == 9) begin
+                                    min_unit_count <= 0;
 
-                        if (min_tens_count == 5) begin
-                            min_tens_count <= 0;
+                                    if (min_tens_count == 5) begin
+                                        min_tens_count <= 0;
+                                    end else begin
+                                        min_tens_count <= min_tens_count + 1;
+                                    end
+                                end else begin
+                                    min_unit_count <= min_unit_count + 1;
+                                end
+                            end
                         end else begin
-                            min_tens_count <= min_tens_count + 1;
+                            second_count <= second_count + 1;
+
+
+                            if (sec_unit_count == 9) begin
+                                sec_unit_count <= 0;
+
+
+                                if (sec_tens_count == 5) begin
+                                    sec_tens_count <= 0;
+                                end else begin
+                                    sec_tens_count <= sec_tens_count + 1;
+                                end
+                            end else begin
+                                sec_unit_count <= sec_unit_count + 1;
+                            end
                         end
-                    end else begin
-                        min_unit_count <= min_unit_count + 1;
                     end
-                end
-            end else begin
-                second_count <= second_count + 1;
+                    if(in==3'b001) begin
+                        state=S1;
+                        if (second_count == 59) begin
+                            second_count <= 0;
+
+                            // Minute
+                            if (minute_count == 59) begin
+                                minute_count <= 0;
+                                min_unit_count <= 0;
+                                min_tens_count <= 0;
+                            end else begin
+                                minute_count <= minute_count + 1;
+
+                                if (min_unit_count == 9) begin
+                                    min_unit_count <= 0;
+
+                                    if (min_tens_count == 5) begin
+                                        min_tens_count <= 0;
+                                    end else begin
+                                        min_tens_count <= min_tens_count + 1;
+                                    end
+                                end else begin
+                                    min_unit_count <= min_unit_count + 1;
+                                end
+                            end
+                        end else begin
+                            second_count <= second_count + 1;
 
 
-                if (sec_unit_count == 9) begin
-                    sec_unit_count <= 0;
+                            if (sec_unit_count == 9) begin
+                                sec_unit_count <= 0;
 
 
-                    if (sec_tens_count == 5) begin
+                                if (sec_tens_count == 5) begin
+                                    sec_tens_count <= 0;
+                                end else begin
+                                    sec_tens_count <= sec_tens_count + 1;
+                                end
+                            end else begin
+                                sec_unit_count <= sec_unit_count + 1;
+                            end
+                        end
+                    end
+                    if(in==3'b010)
+                        state = S2;
+                    if(in==3'b011)
+                        state = S3;
+                S2: if(in==3'b000)
+                        state=S2;
+                    if(in==3'b001)
+                        state=S1;
+                    if(in==3'b010)
+                        state=S2;
+                S3: if(in==3'b000)begin
+                        second_count <= 0;
+                        minute_count <= 0;
+                        sec_unit_count <= 0;
                         sec_tens_count <= 0;
-                    end else begin
-                        sec_tens_count <= sec_tens_count + 1;
+                        min_unit_count <= 0;
+                        min_tens_count <= 0;
+                        state=S3;
                     end
-                end else begin
-                    sec_unit_count <= sec_unit_count + 1;
-                end
+                    if(in==3'b001)begin
+                        second_count <= 0;
+                        minute_count <= 0;
+                        sec_unit_count <= 0;
+                        sec_tens_count <= 0;
+                        min_unit_count <= 0;
+                        min_tens_count <= 0;
+                        state=S1;
+                    end
+                    if(in==3'b011)begin
+                        second_count <= 0;
+                        minute_count <= 0;
+                        sec_unit_count <= 0;
+                        sec_tens_count <= 0;
+                        min_unit_count <= 0;
+                        min_tens_count <= 0;
+                        state=S3;
+                    end
+            endcase
+            if(button)begin
+                in<=in+1;
             end
         end
     end
