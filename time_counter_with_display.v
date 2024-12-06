@@ -1,13 +1,14 @@
 module time_counter_with_display(
     input clk,        
     input rst,
-    input [2:0] in,    
-    input button,    
+    input switch0,    
+    input switch1,    
+    input switch2,      
     output wire [6:0] seg1, 
     output wire [6:0] seg2, 
     output wire [6:0] seg3, 
     output wire [6:0] seg4, 
-    output reg [2:0]state;
+    output reg [2:0] state;
     output reg led     
 );
     parameter S0 = 3'b000;
@@ -23,6 +24,8 @@ module time_counter_with_display(
     reg [3:0] min_unit_count;   
     reg [3:0] min_tens_count;   
 
+    wire [2:0] in;
+    assign in = {switch2, switch1, switch0};
 
     always @(posedge clk or posedge rst) begin
         if (rst) begin
@@ -175,9 +178,6 @@ module time_counter_with_display(
                         state=S3;
                     end
             endcase
-            if(button)begin
-                in<=in+1;
-            end
         end
     end
 
