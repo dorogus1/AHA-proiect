@@ -177,6 +177,7 @@ module time_counter_with_display(
                         min_tens_count <= 0;
                         state=S3;
                     end
+                default: state <= S0;
             endcase
         end
     end
