@@ -1,6 +1,6 @@
 module time_counter_with_display(
     input clk,        
-    input rst,
+    input rst,        // active low reset
     input switch0,    
     input switch1,    
     input switch2,      
@@ -29,8 +29,8 @@ module time_counter_with_display(
     assign in = {switch2, switch1, switch0};
 
     // Clock divider for 1Hz clock
-    always @(posedge clk or posedge rst) begin
-        if (rst) begin
+    always @(posedge clk or negedge rst) begin
+        if (!rst) begin
             clk_divider <= 0;
             clk_1hz <= 0;
         end else if (clk_divider == 50000000 / 2 - 1) begin
@@ -42,8 +42,8 @@ module time_counter_with_display(
     end
 
     // State machine and counter logic
-    always @(posedge clk_1hz or posedge rst) begin
-        if (rst) begin
+    always @(posedge clk_1hz or negedge rst) begin
+        if (!rst) begin
             state <= S0;
             second_count <= 0;
             minute_count <= 0;
@@ -117,8 +117,8 @@ module time_counter_with_display(
     end
 
     // LED blinker - 1Hz
-    always @(posedge clk_1hz or posedge rst) begin
-        if (rst)
+    always @(posedge clk_1hz or negedge rst) begin
+        if (!rst)
             led <= 0;
         else
             led <= ~led;
