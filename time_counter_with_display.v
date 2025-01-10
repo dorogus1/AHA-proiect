@@ -8,13 +8,14 @@ module time_counter_with_display(
     output wire [6:0] seg2, 
     output wire [6:0] seg3, 
     output wire [6:0] seg4, 
-    output reg [2:0] state;
+    output reg [2:0] state,
     output reg led     
 );
-    parameter S0 = 3'b000;
-    parameter S1 = 3'b001;
-    parameter S2 = 3'b010;
-    parameter S3 = 3'b011;
+    parameter S0 = 3'b000;  // Initial state
+    parameter S1 = 3'b001;  // Counting state
+    parameter S2 = 3'b010;  // Pause state
+    parameter S3 = 3'b011;  // Reset state
+    
     reg [25:0] clk_divider;  
     reg clk_1hz;             
     reg [5:0] second_count;  
@@ -27,6 +28,7 @@ module time_counter_with_display(
     wire [2:0] in;
     assign in = {switch2, switch1, switch0};
 
+    // Clock divider for 1Hz clock
     always @(posedge clk or posedge rst) begin
         if (rst) begin
             clk_divider <= 0;
@@ -39,9 +41,10 @@ module time_counter_with_display(
         end
     end
 
-
+    // State machine and counter logic
     always @(posedge clk_1hz or posedge rst) begin
         if (rst) begin
+            state <= S0;
             second_count <= 0;
             minute_count <= 0;
             sec_unit_count <= 0;
@@ -50,147 +53,78 @@ module time_counter_with_display(
             min_tens_count <= 0;
         end else begin
             case(state)
-                S0: if(in==3'b000)
-                    state = S0;
-                    if(in==3'b001)
-                    state = S1;
-                S1: if(in==3'b000) begin
-                        state=S1;
+                S0: begin  // Initial state
+                    if(in == 3'b001)
+                        state <= S1;
+                end
+                
+                S1: begin  // Counting state
+                    if(in == 3'b010)
+                        state <= S2;
+                    else if(in == 3'b011)
+                        state <= S3;
+                    else begin  // Continue counting if in S1
                         if (second_count == 59) begin
                             second_count <= 0;
-
-                            // Minute
                             if (minute_count == 59) begin
                                 minute_count <= 0;
                                 min_unit_count <= 0;
                                 min_tens_count <= 0;
                             end else begin
                                 minute_count <= minute_count + 1;
-
                                 if (min_unit_count == 9) begin
                                     min_unit_count <= 0;
-
-                                    if (min_tens_count == 5) begin
+                                    if (min_tens_count == 5)
                                         min_tens_count <= 0;
-                                    end else begin
+                                    else
                                         min_tens_count <= min_tens_count + 1;
-                                    end
-                                end else begin
+                                end else
                                     min_unit_count <= min_unit_count + 1;
-                                end
                             end
                         end else begin
                             second_count <= second_count + 1;
-
-
                             if (sec_unit_count == 9) begin
                                 sec_unit_count <= 0;
-
-
-                                if (sec_tens_count == 5) begin
+                                if (sec_tens_count == 5)
                                     sec_tens_count <= 0;
-                                end else begin
+                                else
                                     sec_tens_count <= sec_tens_count + 1;
-                                end
-                            end else begin
+                            end else
                                 sec_unit_count <= sec_unit_count + 1;
-                            end
                         end
                     end
-                    if(in==3'b001) begin
-                        state=S1;
-                        if (second_count == 59) begin
-                            second_count <= 0;
-
-                            // Minute
-                            if (minute_count == 59) begin
-                                minute_count <= 0;
-                                min_unit_count <= 0;
-                                min_tens_count <= 0;
-                            end else begin
-                                minute_count <= minute_count + 1;
-
-                                if (min_unit_count == 9) begin
-                                    min_unit_count <= 0;
-
-                                    if (min_tens_count == 5) begin
-                                        min_tens_count <= 0;
-                                    end else begin
-                                        min_tens_count <= min_tens_count + 1;
-                                    end
-                                end else begin
-                                    min_unit_count <= min_unit_count + 1;
-                                end
-                            end
-                        end else begin
-                            second_count <= second_count + 1;
-
-
-                            if (sec_unit_count == 9) begin
-                                sec_unit_count <= 0;
-
-
-                                if (sec_tens_count == 5) begin
-                                    sec_tens_count <= 0;
-                                end else begin
-                                    sec_tens_count <= sec_tens_count + 1;
-                                end
-                            end else begin
-                                sec_unit_count <= sec_unit_count + 1;
-                            end
-                        end
-                    end
-                    if(in==3'b010)
-                        state = S2;
-                    if(in==3'b011)
-                        state = S3;
-                S2: if(in==3'b000)
-                        state=S2;
-                    if(in==3'b001)
-                        state=S1;
-                    if(in==3'b010)
-                        state=S2;
-                S3: if(in==3'b000)begin
-                        second_count <= 0;
-                        minute_count <= 0;
-                        sec_unit_count <= 0;
-                        sec_tens_count <= 0;
-                        min_unit_count <= 0;
-                        min_tens_count <= 0;
-                        state=S3;
-                    end
-                    if(in==3'b001)begin
-                        second_count <= 0;
-                        minute_count <= 0;
-                        sec_unit_count <= 0;
-                        sec_tens_count <= 0;
-                        min_unit_count <= 0;
-                        min_tens_count <= 0;
-                        state=S1;
-                    end
-                    if(in==3'b011)begin
-                        second_count <= 0;
-                        minute_count <= 0;
-                        sec_unit_count <= 0;
-                        sec_tens_count <= 0;
-                        min_unit_count <= 0;
-                        min_tens_count <= 0;
-                        state=S3;
-                    end
+                end
+                
+                S2: begin  // Pause state
+                    if(in == 3'b001)
+                        state <= S1;
+                end
+                
+                S3: begin  // Reset state
+                    second_count <= 0;
+                    minute_count <= 0;
+                    sec_unit_count <= 0;
+                    sec_tens_count <= 0;
+                    min_unit_count <= 0;
+                    min_tens_count <= 0;
+                    if(in == 3'b001)
+                        state <= S1;
+                end
+                
                 default: state <= S0;
             endcase
         end
     end
 
-    // LED se aprinde si se stinge o data pe secunda
+    // LED blinker - 1Hz
     always @(posedge clk_1hz or posedge rst) begin
-        if (rst) begin
+        if (rst)
             led <= 0;
-        end else begin
+        else
             led <= ~led;
-        end
     end
 
+    // Display module instantiation
     time_display display_all (
         .digit1(sec_unit_count), 
         .digit2(sec_tens_count),  
